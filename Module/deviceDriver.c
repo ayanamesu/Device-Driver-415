@@ -26,6 +26,8 @@
 
 MODULE_LICENSE("GPL");
 
+static int numofOpens = 0;
+//file operations  structure
 static struct file_operations fops = {
     .open = devOpen,
     .release = devRelease,
@@ -33,11 +35,38 @@ static struct file_operations fops = {
     .write = devWrite,
     .unlocked_ioctl = devIoctl,
 };
-
+//functions 
 static int devOpen(struct inode *, struct file *);
 static int devRelease(struct inode *, struct file *);
 static ssize_t devRead(struct file *, char *, size_t, loff_t *);
 static ssize_t devWrite(struct file *,const char *, size_t, loff_t *);
 static long devIoctl(struct file *fs, unsigned int command, unsigned long data);
 
-static int __init
+//opens the function 
+static int devOpen(struct inode * inode, struct file * fs) {
+    numofOpens++;
+    printk(KERN_INFO "ccDevice #%d is opening\n",numofOpens);
+    return 0;
+}
+
+static long devIoctl(struct file *fs, unsigned int command, unsigned long data) {
+    printk(KERN_INFO "devIoctl!");
+    switch (command) {
+        case 0: // ENCRYPT
+            // Encrypt the entire buffer with Caesar cipher (shift of 3)
+            for (int i = 0; i < BUF_SIZE; i++) {
+                kernel_buffer[i] = ((kernel_buffer[i] - KEY) % 128 + 128) % 128;
+            }
+            break;
+        case 1: // DECRYPT
+            // Decrypt the entire buffer with Caesar cipher (shift of 3)
+            for (int i = 0; i < BUF_SIZE; i++) {
+                kernel_buffer[i] = (kernel_buffer[i] + KEY) % 128;
+            }
+            break;
+        default:
+            printk(KERN_ERR "devIoctl invalid command.");
+            return -1; // Error code
+    }
+    return 0;
+}
