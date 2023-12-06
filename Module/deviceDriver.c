@@ -19,28 +19,30 @@
 #include <linux/uaccess.h>
 
 
-#define DEVICE NAME "cesarCipher"
+#define DEVICE_NAME "cesarCipher"
 #define BUF_SIZE 100
 #define KEY 3
 
-
+MODULE_DESCRIPTION("A simple cesar cipher driver");
 MODULE_LICENSE("GPL");
 
 static int numofOpens = 0;
-//file operations  structure
-static struct file_operations fops = {
-    .open = devOpen,
-    .release = devRelease,
-    .read = devRead,
-    .write = devWrite,
-    .unlocked_ioctl = devIoctl,
-};
+
 //functions 
 static int devOpen(struct inode *, struct file *);
 static int devRelease(struct inode *, struct file *);
 static ssize_t devRead(struct file *, char *, size_t, loff_t *);
 static ssize_t devWrite(struct file *,const char *, size_t, loff_t *);
 static long devIoctl(struct file *fs, unsigned int command, unsigned long data);
+
+//file operations  structure
+struct file_operations fops = {
+    .open = devOpen,
+    .release = devRelease,
+    .read = devRead,
+    .write = devWrite,
+    .unlocked_ioctl = devIoctl,
+};
 
 
 static int __init cesarCipher_init(void) {
@@ -62,6 +64,13 @@ static int devOpen(struct inode * inode, struct file * fs) {
 static int devRelease(struct inode * inode, struct file * fs) {
      printk(KERN_INFO "ccDevice closing\n");
      return 0;
+}
+
+static ssize_t devRead(struct file *filep, char *buffer, size_t len, loff_t *offset) {
+return 0;
+}
+static ssize_t devWrite(struct file *file, const char *buf, size_t len, loff_t *off) {
+return 0;
 }
 
 static long devIoctl(struct file *fs, unsigned int command, unsigned long data) {

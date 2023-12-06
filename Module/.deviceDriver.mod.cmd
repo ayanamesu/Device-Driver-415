@@ -1,0 +1,1 @@
+cmd_/home/student/Documents/csc415-device-driver-ayanamesu/Module/deviceDriver.mod := { echo  /home/student/Documents/csc415-device-driver-ayanamesu/Module/deviceDriver.o;  echo; } > /home/student/Documents/csc415-device-driver-ayanamesu/Module/deviceDriver.mod
