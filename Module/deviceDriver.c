@@ -42,11 +42,26 @@ static ssize_t devRead(struct file *, char *, size_t, loff_t *);
 static ssize_t devWrite(struct file *,const char *, size_t, loff_t *);
 static long devIoctl(struct file *fs, unsigned int command, unsigned long data);
 
+
+static int __init cesarCipher_init(void) {
+    int result;
+    result = register_chrdev(0, DEVICE_NAME, &fops);
+    if (result < 0) {
+        printk(KERN_ERR "Failed to register with a device %d\n", result);
+        return result;
+    }
+    return 0;
+}
 //opens the function 
 static int devOpen(struct inode * inode, struct file * fs) {
     numofOpens++;
     printk(KERN_INFO "ccDevice #%d is opening\n",numofOpens);
     return 0;
+}
+
+static int devRelease(struct inode * inode, struct file * fs) {
+     printk(KERN_INFO "ccDevice closing\n");
+     return 0;
 }
 
 static long devIoctl(struct file *fs, unsigned int command, unsigned long data) {
