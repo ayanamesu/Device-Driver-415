@@ -33,7 +33,7 @@ int main() {
   while (1) {
     printf("Opening the deviceDriver\n");
     // opens /dev/cesarCipher
-    fd = open("/dev/cesarCipher", O_RDWR);
+    fd = open("/dev/caeserCipher", O_RDWR);
     if (fd < 0) {
       perror("failed to open device");
       return fd;

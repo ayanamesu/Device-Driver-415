@@ -15,11 +15,11 @@
 #include <linux/kernel.h>
 #include <linux/fs.h>
 #include <linux/cdev.h>
-#include <linux/kmalloc.h>
+#include <linux/slab.h> // kmalloc()
 #include <linux/uaccess.h>
 
 
-#define DEVICE_NAME "cesarCipher"
+#define DEVICE_NAME "caeserCipher"
 #define BUFFER_SIZE 256
 #define KEY 5  // default key
 
@@ -72,7 +72,7 @@ int init_module(void) {
     }
     printk("Major for dev = %d\n", MAJOR(dev));
     
-    dev_class = class_create(THIS_MODULE, "CaeserCipher");
+    dev_class = class_create(THIS_MODULE, "caeserCipher");
     if (dev_class < 0)
     {
         printk("Cannot create the struct class for device\n");
@@ -82,23 +82,36 @@ int init_module(void) {
 
     cdev_init(&my_cdev, &fops);
 
-    kernel_buffer = kmalloc(BUFFER_SIZE);
+    kernel_buffer = kmalloc(BUFFER_SIZE, GFP_KERNEL);
     if (kernel_buffer == NULL) {
         printk(KERN_ERR "Failed to kmalloc kernel_buffer.\n");
         return -1;
     }
 
     ret = cdev_add(&my_cdev, dev, 1);
+    if (ret < 0)
+    {
+        printk(KERN_ERR "Failed to add character device\n");
+        class_destroy(dev_class);
+        unregister_chrdev_region(dev, 1);
+        return ret;
+    }
 
+    if (IS_ERR(device_create(dev_class, NULL, dev, NULL, "caeserCipher")))
+    {
+        pr_err("Cannot create the device...\n");
+        class_destroy(dev_class);
+        return -1;
+    } 
     return ret;
 }
 
 // this open function initialized the encds structure and saves it in the
-// logs fs.
+// private data fs.
 static int devOpen(struct inode * inode, struct file * fs) {
     struct encds * ds;
 
-    ds = kmalloc(sizeof(struct encds));
+    ds = kmalloc(sizeof(struct encds), GFP_KERNEL);
 
     if (ds == 0) {
         printk(KERN_ERR "Cannot kmalloc, File not opened.\n");
@@ -107,7 +120,7 @@ static int devOpen(struct inode * inode, struct file * fs) {
 
     ds->key = KEY;
     ds->flag = 0;
-    fs->logs = ds;
+    fs->private_data = ds;
     return 0;
 }
 
@@ -119,7 +132,7 @@ static ssize_t devWrite (struct file * fs, const char __user * buf, size_t hsize
 
     printk(KERN_INFO " inside devWrite\n");
 
-    ds = (struct encds *) fs->logs;
+    ds = (struct encds *) fs->private_data;
 
     err = copy_from_user(kernel_buffer + *off, buf, hsize);
 
@@ -145,7 +158,7 @@ static ssize_t devRead (struct file * fs, char __user * buf, size_t hsize, loff_
 
     // printk(KERN_INFO "" inside devRead");
 
-    ds = (struct encds *) fs->logs;
+    ds = (struct encds *) fs->private_data;
 
     bufLen = strlen(kernel_buffer);
 
@@ -166,11 +179,11 @@ static ssize_t devRead (struct file * fs, char __user * buf, size_t hsize, loff_
     return 0;
 }
 
-//devRelease function frees the file system logs
+//devRelease function frees the file system data
 static int devRelease(struct inode * inode, struct file * fs) {
     struct encds * ds;
 
-    ds = (struct encds *) fs->logs;
+    ds = (struct encds *) fs->private_data;
     vfree(ds);
     return 0;
 }
@@ -212,7 +225,7 @@ static long devIoCtl (struct file * fs, unsigned int command, unsigned long data
 
     printk(KERN_INFO "inside myIoCtl");
 
-    ds = (struct encds *) fs->logs;
+    ds = (struct encds *) fs->private_data;
     switch (command) {
         case ENCRYPT:
             encrypt(ds->key);
@@ -234,8 +247,7 @@ static long devIoCtl (struct file * fs, unsigned int command, unsigned long data
 void cleanup_module(void) {
     unregister_chrdev_region(dev, 1);
     cdev_del(&my_cdev);
-
-    vfree(kernel_buffer);
+    kfree(kernel_buffer);
     kernel_buffer = NULL;
 
     printk(KERN_INFO "closing from deviceDriver.\n");
