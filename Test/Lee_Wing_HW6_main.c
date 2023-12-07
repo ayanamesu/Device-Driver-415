@@ -32,7 +32,7 @@ int main() {
 
   while (1) {
     printf("Opening the deviceDriver\n");
-
+    // opens /dev/cesarCipher
     fd = open("/dev/cesarCipher", O_RDWR);
     if (fd < 0) {
       perror("failed to open device");
@@ -60,7 +60,7 @@ int main() {
     printf("\nEncrypted text:\n%s\n\n", res);
     printf("Decrypting text\n\n");
 
-    // ioctl to decrypt the data on the driver (the kernel buffer)
+    // ioctl to decrypt
     ioctl(fd, DECRYPT);
 
     read(fd, res, strlen(text));
