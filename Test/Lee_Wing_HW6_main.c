@@ -19,57 +19,65 @@
 #include <sys/ioctl.h>
 #include <string.h>
 
+#define ENCRYPT _IO('e', 0)
+#define DECRYPT _IO('e', 1)
+#define SETKEY _IO('e', 2)
 
-#define SIZE 50
+#define MAX_CHARS 512
 
-static char receive[SIZE];
+int main(int argc, char *argv[]) {
+  int key, fd;
+  char *text = malloc(MAX_CHARS);
+  char *res = malloc(MAX_CHARS);
+  char again[1];
 
-int main() {
-    int fd;
-    int ret;
-    char stringSize[SIZE];
+  while (1) {
+    printf("Opening the encryption device...\n");
+
     fd = open("/dev/cesarCipher", O_RDWR);
-
-    if(fd < 0) {
-        printf(" Failed to open device driver.\n");
-        perror("Open Error on device");
-        return errno;
-    } else {
-        printf(" Successfully opened the Device.\n");
+    if (fd < 0) {
+      perror("open: failed to open device");
+      return fd;
     }
 
-    printf("\nPlease enter any Input String: \n");
-    scanf("%[^\n]%*c", stringSize);
+    printf("Enter a key for encryption (0-50): ");
+    scanf("%d", &key);
+    getc(stdin);
 
-    if(strlen(stringSize) > SIZE) {
-        printf("input exceeds length size");
-        close(fd);
-        return(-1);
-    }
+    // ioctl to set the key for the device driver
+    ioctl(fd, SETKEY, key);
 
-    printf("\nMessage writting to device: %s \n", stringSize);
-    ret = write(fd, stringSize, strlen(stringSize));
+    printf("Enter some text to be encrypted (maximum 512 characters):\n");
+    scanf("%[^\n]s", text);
+    getc(stdin);
 
-    if(ret < 0) {
-        perror("Failed to write to device.");
-        return errno;
-    }
-    int ioctlCommand = 0;
-    ret = ioctl(fd, ioctlCommand, 0);
+    printf("Length: %ld\n", strlen(text));
 
+    printf("This is the text you are encrypting:\n%s\n", text);
 
-    printf("Reading from device.\n");
-    ret = read(fd, receive, SIZE);
-    if(ret < 0) {
-        perror("failed to read from device.\n");
-        return errno;
-    }
-    printf("The original message is: %s \n", receive);
+    write(fd, text, strlen(text));
+    read(fd, res, strlen(text));
 
-    printf("End of program.\n");
-    return 0;
+    printf("\nHere is your encrypted text:\n%s\n\n", res);
+    printf("Decrypting the text...\n\n");
 
+    // ioctl to decrypt the data on the driver (the kernel buffer)
+    ioctl(fd, DECRYPT);
 
+    read(fd, res, strlen(text));
 
+    printf("Here is the decrypted text again: \n%s\n\n", res);
 
+    printf("Re-encrypting the text for security...\n\n");
+
+    // re-encrypt the data on the driver before closing
+    ioctl(fd, ENCRYPT);
+
+    printf("Closing the encryption device...\n");
+
+    close(fd);
+
+  printf("\nThank you for testing my character device. Bye!\n");
+
+  }
 }
