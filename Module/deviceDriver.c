@@ -18,7 +18,7 @@
 #include <linux/fs.h>
 #include <linux/uaccess.h>
 
-#define DEVICE_NAME "cesarCipher"
+#define DEVICE_NAME "deviceDriver"
 #define BUF_SIZE 100
 #define KEY 3
 

@@ -31,7 +31,7 @@ int main() {
     fd = open("/dev/cesarCipher", O_RDWR);
 
     if(fd < 0) {
-        print(" Failed to open device driver.\n");
+        printf(" Failed to open device driver.\n");
         perror("Open Error on device");
         return errno;
     } else {
@@ -43,6 +43,7 @@ int main() {
 
     if(strlen(stringSize) > SIZE) {
         printf("input exceeds length size");
+        close(fd);
         return(-1);
     }
 
@@ -53,6 +54,9 @@ int main() {
         perror("Failed to write to device.");
         return errno;
     }
+    int ioctlCommand = 0;
+    ret = ioctl(fd, ioctlCommand, 0);
+
 
     printf("Reading from device.\n");
     ret = read(fd, receive, SIZE);
