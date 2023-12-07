@@ -52,8 +52,8 @@ struct file_operations fops = {
     .unlocked_ioctl = devIoCtl
 };
 
-// data structure used for holding the encryption key and a flag that indicates
-// whether the data is encrypted or decrypted
+// structure used for holding the encryption key and a flag 
+// that tells us if its encrypted or decrypted.
 typedef struct encds {
     int key;
     int flag; // 0 = unencrypted, 1 = encrypted
@@ -111,9 +111,8 @@ static int devOpen(struct inode * inode, struct file * fs) {
     return 0;
 }
 
-// this write function takes in the buffer from user space and brings it into
+//write function takes in the buffer from user space and brings it into
 // kernel space.  then it encrypts it in the kernel buffer.
-// returns how many bytes were passed in.
 static ssize_t devWrite (struct file * fs, const char __user * buf, size_t hsize, loff_t * off) {
     int err;
     struct encds * ds;
@@ -127,7 +126,7 @@ static ssize_t devWrite (struct file * fs, const char __user * buf, size_t hsize
     printk(KERN_SOH "WRITE: Offset: %lld", *off);
 
     if (err != 0) {
-        printk(KERN_ERR "encrypt: copy_from_user failed: %d bytes failed to copy\n", err);
+        printk(KERN_ERR "encrypt failed: %d \n", err);
         return -1;
     }
 
@@ -160,14 +159,14 @@ static ssize_t devRead (struct file * fs, char __user * buf, size_t hsize, loff_
     err = copy_to_user(buf, kernel_buffer + *off, hsize);
     
     if (err != 0) {
-        printk(KERN_ERR "decrypt: copy_to_user failed: %d bytes failed to copy\n", err);
+        printk(KERN_ERR "decrypt failed: %d \n", err);
         return -1;
     }
 
     return 0;
 }
 
-// this close function frees the file system private data memory
+//devRelease function frees the file system logs
 static int devRelease(struct inode * inode, struct file * fs) {
     struct encds * ds;
 
@@ -231,9 +230,6 @@ static long devIoCtl (struct file * fs, unsigned int command, unsigned long data
     }
     return 0;
 }
-
-
-
 // removes and destroys module
 void cleanup_module(void) {
     unregister_chrdev_region(dev, 1);
