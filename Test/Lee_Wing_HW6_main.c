@@ -23,31 +23,30 @@
 #define DECRYPT _IO('e', 1)
 #define SETKEY _IO('e', 2)
 
-#define MAX_CHARS 512
+#define SIZE 256
 
-int main(int argc, char *argv[]) {
+int main() {
   int key, fd;
-  char *text = malloc(MAX_CHARS);
-  char *res = malloc(MAX_CHARS);
-  char again[1];
+  char *text = malloc(SIZE);
+  char *res = malloc(SIZE);
 
   while (1) {
-    printf("Opening the encryption device...\n");
+    printf("Opening the deviceDriver\n");
 
     fd = open("/dev/cesarCipher", O_RDWR);
     if (fd < 0) {
-      perror("open: failed to open device");
+      perror("failed to open device");
       return fd;
     }
 
-    printf("Enter a key for encryption (0-50): ");
+    printf("Enter a key for encryption: ");
     scanf("%d", &key);
     getc(stdin);
 
     // ioctl to set the key for the device driver
     ioctl(fd, SETKEY, key);
 
-    printf("Enter some text to be encrypted (maximum 512 characters):\n");
+    printf("Enter some characters to be encrypted:\n");
     scanf("%[^\n]s", text);
     getc(stdin);
 
@@ -58,26 +57,20 @@ int main(int argc, char *argv[]) {
     write(fd, text, strlen(text));
     read(fd, res, strlen(text));
 
-    printf("\nHere is your encrypted text:\n%s\n\n", res);
-    printf("Decrypting the text...\n\n");
+    printf("\nEncrypted text:\n%s\n\n", res);
+    printf("Decrypting text\n\n");
 
     // ioctl to decrypt the data on the driver (the kernel buffer)
     ioctl(fd, DECRYPT);
 
     read(fd, res, strlen(text));
 
-    printf("Here is the decrypted text again: \n%s\n\n", res);
+    printf("Decrypted text: \n%s\n\n", res);
 
-    printf("Re-encrypting the text for security...\n\n");
 
-    // re-encrypt the data on the driver before closing
-    ioctl(fd, ENCRYPT);
-
-    printf("Closing the encryption device...\n");
+    printf("Closing deviceDriver\n");
 
     close(fd);
-
-  printf("\nThank you for testing my character device. Bye!\n");
 
   }
 }

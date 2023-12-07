@@ -20,7 +20,7 @@
 
 
 #define DEVICE_NAME "cesarCipher"
-#define BUFFER_SIZE 512
+#define BUFFER_SIZE 256
 #define KEY 5  // default key
 
 #define ENCRYPT _IO('e', 0)
