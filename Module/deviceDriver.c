@@ -40,7 +40,7 @@ char *kernel_buffer;
 struct cdev my_cdev;
 dev_t dev;
 
-MODULE_DESCRIPTION("A simple encryption/decryption program");
+MODULE_DESCRIPTION("A simple caesar cipher device driver");
 MODULE_LICENSE("GPL");
 
 // file operations structure
@@ -210,7 +210,7 @@ static int decrypt(int key) {
     bufLen = strlen(kernel_buffer);
 
     for (i = 0; i < bufLen; i++) {
-        kernel_buffer[i] = (kernel_buffer[i] - key + 128) %128;
+        kernel_buffer[i] = (kernel_buffer[i] - key + 128 ) % 128;
     }
 
     printk(KERN_INFO "Decrypted Text:\n%s\n", kernel_buffer);

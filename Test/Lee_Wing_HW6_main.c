@@ -32,7 +32,7 @@ int main() {
   char *res = malloc(SIZE);
 
     printf("Opening the deviceDriver\n");
-    // opens /dev/cesarCipher
+    // opens /dev/caeserCipher
     fd = open("/dev/caeserCipher", O_RDWR);
     if (fd < 0) {
       perror("failed to open device");
@@ -55,7 +55,7 @@ int main() {
     write(fd, text, strlen(text));
     read(fd, res, strlen(text));
 
-    printf("\nEncrypted text:\n%s\n\n", res);
+    printf("\nEncrypted text:\n%s\n", res);
 
     printf("----Decrypting text----\n\n");
 
