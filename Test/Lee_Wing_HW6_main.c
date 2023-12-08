@@ -19,18 +19,18 @@
 #include <sys/ioctl.h>
 #include <string.h>
 
-#define ENCRYPT _IO('e', 0)
-#define DECRYPT _IO('e', 1)
-#define SETKEY _IO('e', 2)
+
+#define DECRYPT _IO('k', 1)
+#define SETKEY _IO('k', 2)
 
 #define SIZE 256
 
 int main() {
-  int key, fd;
+  int  fd;
+  int key;
   char *text = malloc(SIZE);
   char *res = malloc(SIZE);
 
-  while (1) {
     printf("Opening the deviceDriver\n");
     // opens /dev/cesarCipher
     fd = open("/dev/caeserCipher", O_RDWR);
@@ -42,6 +42,7 @@ int main() {
     printf("Enter a key for encryption: ");
     scanf("%d", &key);
     getc(stdin);
+
 
     // ioctl to set the key for the device driver
     ioctl(fd, SETKEY, key);
@@ -60,7 +61,7 @@ int main() {
     printf("\nEncrypted text:\n%s\n\n", res);
     printf("Decrypting text\n\n");
 
-    // ioctl to decrypt
+    
     ioctl(fd, DECRYPT);
 
     read(fd, res, strlen(text));
@@ -68,9 +69,9 @@ int main() {
     printf("Decrypted text: \n%s\n\n", res);
 
 
-    printf("Closing deviceDriver\n");
+    printf("Exiting the program\n");
 
     close(fd);
-
+    return 0;
   }
-}
+

@@ -21,11 +21,11 @@
 
 #define DEVICE_NAME "caeserCipher"
 #define BUFFER_SIZE 256
-#define KEY 5  // default key
+#define KEY 3  // default key
 
-#define ENCRYPT _IO('e', 0)
-#define DECRYPT _IO('e', 1)
-#define SETKEY _IO('e', 2)
+#define ENCRYPT _IO('k', 0)
+#define DECRYPT _IO('k', 1)
+#define SETKEY _IO('k', 2)
 
 static ssize_t devRead(struct file * fs, char __user * buf, size_t hsize, loff_t * off);
 static ssize_t devWrite(struct file * fs, const char __user * buf, size_t hsize, loff_t * off);
@@ -56,10 +56,10 @@ struct file_operations fops = {
 // that tells us if its encrypted or decrypted.
 typedef struct encds {
     int key;
-    int flag; // 0 = unencrypted, 1 = encrypted
+    int flag; 
 } encds;
 
-// creates a device node in /dev, returns error if not made
+// init to initialize the device driver 
 int init_module(void) {
     int ret;
     dev_t dev;
@@ -109,18 +109,18 @@ int init_module(void) {
 // this open function initialized the encds structure and saves it in the
 // private data fs.
 static int devOpen(struct inode * inode, struct file * fs) {
-    struct encds * ds;
+    struct encds * enc_data;
 
-    ds = kmalloc(sizeof(struct encds), GFP_KERNEL);
+    enc_data = kmalloc(sizeof(struct encds), GFP_KERNEL);
 
-    if (ds == 0) {
+    if (enc_data == 0) {
         printk(KERN_ERR "Cannot kmalloc, File not opened.\n");
         return -1;
     }
 
-    ds->key = KEY;
-    ds->flag = 0;
-    fs->private_data = ds;
+    enc_data->key = KEY;
+    enc_data->flag = 0;
+    fs->private_data = enc_data;
     return 0;
 }
 
@@ -128,11 +128,11 @@ static int devOpen(struct inode * inode, struct file * fs) {
 // kernel space.  then it encrypts it in the kernel buffer.
 static ssize_t devWrite (struct file * fs, const char __user * buf, size_t hsize, loff_t * off) {
     int err;
-    struct encds * ds;
+    struct encds * enc_data;
 
     printk(KERN_INFO " inside devWrite\n");
 
-    ds = (struct encds *) fs->private_data;
+    enc_data = (struct encds *) fs->private_data;
 
     err = copy_from_user(kernel_buffer + *off, buf, hsize);
 
@@ -143,9 +143,9 @@ static ssize_t devWrite (struct file * fs, const char __user * buf, size_t hsize
         return -1;
     }
 
-    encrypt(ds->key);
+    encrypt(enc_data->key);
 
-    ds->flag = 1;
+    enc_data->flag = 1;
 
     return hsize;
 }
@@ -154,11 +154,11 @@ static ssize_t devWrite (struct file * fs, const char __user * buf, size_t hsize
 // to the user space.
 static ssize_t devRead (struct file * fs, char __user * buf, size_t hsize, loff_t * off) {
     int err, bufLen;
-    struct encds * ds;
+    struct encds * enc_data;
 
     // printk(KERN_INFO "" inside devRead");
 
-    ds = (struct encds *) fs->private_data;
+    enc_data = (struct encds *) fs->private_data;
 
     bufLen = strlen(kernel_buffer);
 
@@ -181,21 +181,21 @@ static ssize_t devRead (struct file * fs, char __user * buf, size_t hsize, loff_
 
 //devRelease function frees the file system data
 static int devRelease(struct inode * inode, struct file * fs) {
-    struct encds * ds;
+    struct encds * enc_data;
 
-    ds = (struct encds *) fs->private_data;
-    vfree(ds);
+    enc_data = (struct encds *) fs->private_data;
+    vfree(enc_data);
     return 0;
 }
 
-// caesar cypher encryption function
+// Caesar cipher encryption function
 static int encrypt(int key) {
     int i, bufLen;
 
     bufLen = strlen(kernel_buffer);
 
-    for (i = 0; i < bufLen - 1; i++) {
-        kernel_buffer[i] = ((kernel_buffer[i] - key) % 128) + 1;
+    for (i = 0; i < bufLen; i++) {
+        kernel_buffer[i] = (kernel_buffer[i] + key - 1) % 128;
     }
 
     printk(KERN_INFO "Encrypted Text:\n%s\n", kernel_buffer);
@@ -203,14 +203,14 @@ static int encrypt(int key) {
     return 0;
 }
 
-// decrypt function
+// Caesar cipher decryption function
 static int decrypt(int key) {
     int i, bufLen;
 
     bufLen = strlen(kernel_buffer);
 
-    for (i = 0; i < bufLen - 1; i++) {
-        kernel_buffer[i] = (kernel_buffer[i] + key - 1) % 128;
+    for (i = 0; i < bufLen; i++) {
+        kernel_buffer[i] = (kernel_buffer[i] - key + 128) % 128;
     }
 
     printk(KERN_INFO "Decrypted Text:\n%s\n", kernel_buffer);
@@ -221,22 +221,22 @@ static int decrypt(int key) {
 // this is a way to deal with device files where the data has already been
 // encrypted/decrypted; it also allows for the key to be reset
 static long devIoCtl (struct file * fs, unsigned int command, unsigned long data) {
-    struct encds * ds;
+    struct encds * enc_data;
 
     printk(KERN_INFO "inside myIoCtl");
 
-    ds = (struct encds *) fs->private_data;
+    enc_data = (struct encds *) fs->private_data;
     switch (command) {
         case ENCRYPT:
-            encrypt(ds->key);
-            ds->flag = 1;
+            encrypt(enc_data->key);
+            enc_data->flag = 1;
             break;
         case DECRYPT:
-            decrypt(ds->key);
-            ds->flag = 0;
+            decrypt(enc_data->key);
+            enc_data->flag = 0;
             break;
         case SETKEY:
-            ds->key = (int) data;
+            enc_data->key = (int) data;
             break;
         default:
             printk(KERN_ERR "myIoCtl: invalid command entered");
