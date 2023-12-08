@@ -27,6 +27,7 @@
 #define DECRYPT _IO('e', 1)
 #define SETKEY _IO('e', 2)
 
+//functions
 static ssize_t devRead(struct file * fs, char __user * buf, size_t len, loff_t * off);
 static ssize_t devWrite(struct file * fs, const char __user * buf, size_t len, loff_t * off);
 static int devOpen(struct inode * inode, struct file * fs);
@@ -53,7 +54,7 @@ struct file_operations fops = {
 };
 
 // structure used for holding the encryption key and a flag 
-// that tells us if its encrypted or decrypted.
+// that tells us if its 1= encrypted or 0 = decrypted.
 typedef struct encds {
     int key;
     int flag; 
@@ -106,7 +107,7 @@ int init_module(void) {
     return ret;
 }
 
-// this open function initialized the encds structure and saves it in the
+// devOpen function initializes the encds structure and saves it in the
 // private data fs.
 static int devOpen(struct inode * inode, struct file * fs) {
     struct encds * enc_data;
@@ -124,8 +125,8 @@ static int devOpen(struct inode * inode, struct file * fs) {
     return 0;
 }
 
-//write function takes in the buffer from user space and brings it into
-// kernel space.  then it encrypts it in the kernel buffer.
+//devwrite function takes in the buffer from user space and brings it into
+// kernel .  then it encrypts it in the kernel buffer.
 static ssize_t devWrite (struct file * fs, const char __user * buf, size_t len, loff_t * off) {
     int err;
     struct encds * enc_data;
@@ -150,13 +151,10 @@ static ssize_t devWrite (struct file * fs, const char __user * buf, size_t len, 
     return len;
 }
 
-// this read function decrypts the data in the kernel buffer then copies it back
-// to the user space.
+//devRead function decrypts the data in the kernel buffer 
 static ssize_t devRead (struct file * fs, char __user * buf, size_t len, loff_t * off) {
     int err, bufLen;
     struct encds * enc_data;
-
-    // printk(KERN_INFO "" inside devRead");
 
     enc_data = (struct encds *) fs->private_data;
 
@@ -188,7 +186,7 @@ static int devRelease(struct inode * inode, struct file * fs) {
     return 0;
 }
 
-// Caesar cipher encryption function
+// Caesar cipher encrypt/decrypt function
 static int encrypt(int key) {
     int i, bufLen;
 
@@ -203,7 +201,6 @@ static int encrypt(int key) {
     return 0;
 }
 
-// Caesar cipher decryption function
 static int decrypt(int key) {
     int i, bufLen;
 
@@ -218,8 +215,8 @@ static int decrypt(int key) {
     return 0;
 }
 
-// this is a way to deal with device files where the data has already been
-// encrypted/decrypted; it also allows for the key to be reset
+//deal with files where the data has already been
+// encrypted/decrypted
 static long devIoCtl (struct file * fs, unsigned int command, unsigned long data) {
     struct encds * enc_data;
 
@@ -243,7 +240,7 @@ static long devIoCtl (struct file * fs, unsigned int command, unsigned long data
     }
     return 0;
 }
-// removes and destroys module
+//destroys module and removes them
 void cleanup_module(void) {
     unregister_chrdev_region(dev, 1);
     cdev_del(&my_cdev);
