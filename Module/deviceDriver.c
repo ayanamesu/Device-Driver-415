@@ -23,12 +23,12 @@
 #define BUFFER_SIZE 256
 #define KEY 3  // default key
 
-#define ENCRYPT _IO('k', 0)
-#define DECRYPT _IO('k', 1)
-#define SETKEY _IO('k', 2)
+#define ENCRYPT _IO('e', 0)
+#define DECRYPT _IO('e', 1)
+#define SETKEY _IO('e', 2)
 
-static ssize_t devRead(struct file * fs, char __user * buf, size_t hsize, loff_t * off);
-static ssize_t devWrite(struct file * fs, const char __user * buf, size_t hsize, loff_t * off);
+static ssize_t devRead(struct file * fs, char __user * buf, size_t len, loff_t * off);
+static ssize_t devWrite(struct file * fs, const char __user * buf, size_t len, loff_t * off);
 static int devOpen(struct inode * inode, struct file * fs);
 static int devRelease(struct inode * inode, struct file * fs);
 static int encrypt(int key);
@@ -126,7 +126,7 @@ static int devOpen(struct inode * inode, struct file * fs) {
 
 //write function takes in the buffer from user space and brings it into
 // kernel space.  then it encrypts it in the kernel buffer.
-static ssize_t devWrite (struct file * fs, const char __user * buf, size_t hsize, loff_t * off) {
+static ssize_t devWrite (struct file * fs, const char __user * buf, size_t len, loff_t * off) {
     int err;
     struct encds * enc_data;
 
@@ -134,7 +134,7 @@ static ssize_t devWrite (struct file * fs, const char __user * buf, size_t hsize
 
     enc_data = (struct encds *) fs->private_data;
 
-    err = copy_from_user(kernel_buffer + *off, buf, hsize);
+    err = copy_from_user(kernel_buffer + *off, buf, len);
 
     printk(KERN_SOH "WRITE: Offset: %lld", *off);
 
@@ -147,12 +147,12 @@ static ssize_t devWrite (struct file * fs, const char __user * buf, size_t hsize
 
     enc_data->flag = 1;
 
-    return hsize;
+    return len;
 }
 
 // this read function decrypts the data in the kernel buffer then copies it back
 // to the user space.
-static ssize_t devRead (struct file * fs, char __user * buf, size_t hsize, loff_t * off) {
+static ssize_t devRead (struct file * fs, char __user * buf, size_t len, loff_t * off) {
     int err, bufLen;
     struct encds * enc_data;
 
@@ -164,12 +164,12 @@ static ssize_t devRead (struct file * fs, char __user * buf, size_t hsize, loff_
 
     printk(KERN_SOH "READ: Buffer Length: %d    Offset: %lld", bufLen, *off);
 
-    if (bufLen < hsize) {
-        hsize = bufLen;
+    if (bufLen < len) {
+        len = bufLen;
     }
 
     
-    err = copy_to_user(buf, kernel_buffer + *off, hsize);
+    err = copy_to_user(buf, kernel_buffer + *off, len);
     
     if (err != 0) {
         printk(KERN_ERR "decrypt failed: %d \n", err);
@@ -210,7 +210,7 @@ static int decrypt(int key) {
     bufLen = strlen(kernel_buffer);
 
     for (i = 0; i < bufLen; i++) {
-        kernel_buffer[i] = (kernel_buffer[i] - key + 128) % 128;
+        kernel_buffer[i] = (kernel_buffer[i] - key + 128) %128;
     }
 
     printk(KERN_INFO "Decrypted Text:\n%s\n", kernel_buffer);

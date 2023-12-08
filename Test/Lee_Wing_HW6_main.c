@@ -20,8 +20,8 @@
 #include <string.h>
 
 
-#define DECRYPT _IO('k', 1)
-#define SETKEY _IO('k', 2)
+#define DECRYPT _IO('e', 1)
+#define SETKEY _IO('e', 2)
 
 #define SIZE 256
 
@@ -42,16 +42,13 @@ int main() {
     printf("Enter a key for encryption: ");
     scanf("%d", &key);
     getc(stdin);
-
-
-    // ioctl to set the key for the device driver
+    
     ioctl(fd, SETKEY, key);
 
     printf("Enter some characters to be encrypted:\n");
+    //this scan takes in inputs until next line.
     scanf("%[^\n]s", text);
     getc(stdin);
-
-    printf("Length: %ld\n", strlen(text));
 
     printf("This is the text you are encrypting:\n%s\n", text);
 
@@ -59,7 +56,8 @@ int main() {
     read(fd, res, strlen(text));
 
     printf("\nEncrypted text:\n%s\n\n", res);
-    printf("Decrypting text\n\n");
+
+    printf("----Decrypting text----\n\n");
 
     
     ioctl(fd, DECRYPT);
@@ -74,4 +72,3 @@ int main() {
     close(fd);
     return 0;
   }
-
